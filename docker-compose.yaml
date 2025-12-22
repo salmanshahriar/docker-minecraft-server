@@ -12,8 +12,7 @@ services:
       MEMORY: "5120M"
       MAX_PLAYERS: "15"
       MOTD: "Nigga SMP"
-      ICON: "https://cdn.discordapp.com/icons/986328577475756112/db233c1702c4b0b413\
-        acf544915e1e6a.webp"
+      ICON: "https://cdn.discordapp.com/icons/986328577475756112/db233c1702c4b0b413acf544915e1e6a.webp"
       TZ: "Asia/Dhaka"
       DIFFICULTY: "3"
       OPS: |-
@@ -22,5 +21,6 @@ services:
         https://cdn.modrinth.com/data/TsLS8Py5/versions/gtqGepWi/SkinsRestorer.jar
         https://hangarcdn.papermc.io/plugins/Gecolay/GSit/versions/3.1.0/PAPER/GSit-3.1.0.jar
       LOG_TIMESTAMP: "true"
+      ONLINE_MODE: "false"
     volumes:
       - "./data:/data"
