@@ -1,14 +1,26 @@
 services:
   mc:
-    image: itzg/minecraft-server
-    environment:
-      EULA: "true"
+    image: itzg/minecraft-server:latest
+    tty: true
+    stdin_open: true
     ports:
       - "25565:25565"
+    environment:
+      EULA: "TRUE"
+      TYPE: "PAPER"
+      VERSION: "1.21.11"
+      MEMORY: "5120M"
+      MAX_PLAYERS: "15"
+      MOTD: "Nigga SMP"
+      ICON: "https://cdn.discordapp.com/icons/986328577475756112/db233c1702c4b0b413\
+        acf544915e1e6a.webp"
+      TZ: "Asia/Dhaka"
+      DIFFICULTY: "3"
+      OPS: |-
+        SALMAN_67
+      PLUGINS: |-
+        https://cdn.modrinth.com/data/TsLS8Py5/versions/gtqGepWi/SkinsRestorer.jar
+        https://hangarcdn.papermc.io/plugins/Gecolay/GSit/versions/3.1.0/PAPER/GSit-3.1.0.jar
+      LOG_TIMESTAMP: "true"
     volumes:
-      - data:/data
-    stdin_open: true
-    tty: true
-    restart: unless-stopped
-volumes:
-  data: {}
+      - "./data:/data"
