@@ -23,8 +23,10 @@ services:
         https://hangarcdn.papermc.io/plugins/ViaVersion/ViaBackwards/versions/5.6.0/PAPER/ViaBackwards-5.6.0.jar
         https://hangarcdn.papermc.io/plugins/ViaVersion/ViaVersion/versions/5.6.0/PAPER/ViaVersion-5.6.0.jar
         https://hangarcdn.papermc.io/plugins/ViaVersion/ViaRewind/versions/4.0.12/PAPER/ViaRewind-4.0.12.jar
+        https://cdn.modrinth.com/data/Gh3tnMca/versions/8EuFsUa6/SimpleLogin-1.15.2.jar
       LOG_TIMESTAMP: "true"
       ONLINE_MODE: "false"
     volumes:
       - "./data:/data"
+
 
