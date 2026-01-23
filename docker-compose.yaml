@@ -9,7 +9,7 @@ services:
       EULA: "TRUE"
       TYPE: "PAPER"
       VERSION: "1.21.11"
-      MEMORY: "4096M"
+      MEMORY: "3072M"
       MAX_PLAYERS: "15"
       MOTD: "Nigga SMP"
       ICON: "https://cdn.discordapp.com/icons/986328577475756112/db233c1702c4b0b413acf544915e1e6a.webp"
@@ -28,6 +28,7 @@ services:
       ONLINE_MODE: "false"
     volumes:
       - "./data:/data"
+
 
 
 
