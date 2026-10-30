@@ -33,6 +33,7 @@ dnf install -y \
   sudo \
   net-tools \
   iputils \
+  iproute \
   curl \
   git \
   jq \
@@ -46,6 +47,7 @@ dnf install -y \
   zstd \
   $([ "$os_major_version" -ge 10 ] && echo 'bzip2' || echo 'lbzip2') \
   libpcap \
+  libcap \
   libwebp \
   findutils \
   which \
@@ -68,6 +70,7 @@ dnf clean all
 curl -fsSL -o /tmp/knock.tar.gz https://github.com/Metalcape/knock/releases/download/0.8.1/knock-0.8.1-$TARGET.tar.gz
 tar -xf /tmp/knock.tar.gz -C /usr/local/ && rm /tmp/knock.tar.gz
 ln -s /usr/local/sbin/knockd /usr/sbin/knockd
+ls -l /usr/local/sbin/knockd
 setcap cap_net_raw=ep /usr/local/sbin/knockd
 
 # Set git credentials globally
@@ -76,3 +79,4 @@ cat <<EOF >> /etc/gitconfig
 	name = Minecraft Server on Docker
 	email = server@example.com
 EOF
+git lfs install

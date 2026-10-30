@@ -148,6 +148,18 @@ alternatively, you can mount: <code>/etc/localtime:/etc/localtime:ro
             <td>⬜️</td>
         </tr>
         <tr>
+            <td><code>JAVA_AGENTS</code></td>
+            <td>Comma or newline delimited list of Java agent jar URLs, container paths to jars, or container paths to directories of jars, which are loaded with <code>-javaagent</code></td>
+            <td><code></code></td>
+            <td>⬜️</td>
+        </tr>
+        <tr>
+            <td><code>JVM_AGENTS</code></td>
+            <td>Comma or newline delimited list of native JVM agent URLs, container paths to agents, or container paths to directories of <code>.so</code> agents, which are loaded with <code>-agentpath</code></td>
+            <td><code></code></td>
+            <td>⬜️</td>
+        </tr>
+        <tr>
             <td><code>EXTRA_ARGS</code></td>
             <td>Arguments that would usually be passed to the jar file (those which are written after the filename)</td>
             <td><code></code></td>
@@ -205,6 +217,12 @@ alternatively, you can mount: <code>/etc/localtime:/etc/localtime:ro
             <td>⬜️</td>
         </tr>
         <tr>
+            <td><code>HARDCORE</code></td>
+            <td>Enable hardcore mode. Set to <code>true</code> or <code>false</code>. This maps to the Minecraft server property <code>hardcore</code>.</td>
+            <td><code>false</code></td>
+            <td>⬜️</td>
+        </tr>
+        <tr>
             <td><code>ICON</code></td>
             <td>The url or file path for the icon image to use for the server. It will be downloaded, scaled, and converted to the proper format.</td>
             <td><code></code></td>
@@ -214,102 +232,6 @@ alternatively, you can mount: <code>/etc/localtime:/etc/localtime:ro
             <td><code>OVERRIDE_ICON</code></td>
             <td>The server icon which has been set doesn't get overridden by default. Set this to <code>TRUE</code> to override the icon</td>
             <td><code>FALSE</code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>MAX_PLAYERS</code></td>
-            <td>The maximum number of players that can join the server.</td>
-            <td><code>20</code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>MAX_WORLD_SIZE</code></td>
-            <td>The maximum possible size in blocks, expressed as a radius.</td>
-            <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>ALLOW_NETHER</code></td>
-            <td>Allows players to travel to the Nether</td>
-            <td><code>true</code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>ANNOUNCE_PLAYER_ACHIEVEMENTS</code></td>
-            <td>Allows server to announce when a player gets an achievement.</td>
-            <td><code>true</code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>ENABLE_COMMAND_BLOCK</code></td>
-            <td>Enables the command blocks.</td>
-            <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>FORCE_GAMEMODE</code></td>
-            <td>Force players to join in the default game mode.</td>
-            <td><code>false</code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>GENERATE_STRUCTURES</code></td>
-            <td>Defines whether structures (such as villages) will be generated.</td>
-            <td><code>true</code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>HARDCORE</code></td>
-            <td>If set to <code>true</code>, players will be set to spectator mode if they die.</td>
-            <td><code>false</code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>SNOOPER_ENABLED</code></td>
-            <td>If set to false, the server will not send data to snoop.minecraft.net server.</td>
-            <td><code>true</code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>MAX_BUILD_HEIGHT</code></td>
-            <td>The maximum height in which building is allowed. Terrain may still naturally generate above a low height limit.</td>
-            <td><code>256</code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>SPAWN_ANIMALS</code></td>
-            <td>Determines if animals will be able to spawn.</td>
-            <td><code>true</code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>SPAWN_MONSTERS</code></td>
-            <td>Determines if monsters will be spawned.</td>
-            <td><code>true</code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>SPAWN_NPCS</code></td>
-            <td>Determines if villagers will be spawned.</td>
-            <td><code>true</code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>SPAWN_PROTECTION</code></td>
-            <td>Sets the area that non-ops can not edit (0 to disable)</td>
-            <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>VIEW_DISTANCE</code></td>
-            <td>Sets the amount of world data the server sends the client, measured in chunks in each direction of the player (radius, not diameter). It determines the server-side viewing distance.</td>
-            <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>SEED</code></td>
-            <td>Sets the seed to create the Minecraft world. If you use a negative number, make sure that it is in quotes.</td>
-            <td><code></code></td>
             <td>⬜️</td>
         </tr>
         <tr>
@@ -325,129 +247,26 @@ alternatively, you can mount: <code>/etc/localtime:/etc/localtime:ro
             <td>⬜️</td>
         </tr>
         <tr>
-            <td><code>PVP</code></td>
-            <td>By default, servers are created with player-vs-player (PVP) mode enabled.</td>
-            <td><code>true</code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>LEVEL_TYPE</code></td>
-            <td>By default, a standard world is generated with hills, valleys, water, etc. A different level type can be configured by setting LEVEL_TYPE to <a href="https://minecraft.wiki/w/Server.properties#level-type">an expected type listed here</a>.
-            </td>
-            <td><code>minecraft:default</code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>GENERATOR_SETTINGS</code></td>
-            <td>For some of the level types, <code>GENERATOR_SETTINGS</code> can be used to further customize the world generation <a href="https://minecraft.wiki/w/Server.properties#generator-settings">as described here</a>.</td>
-            <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
             <td><code>LEVEL</code></td>
-            <td>You can either switch between world saves or run multiple containers with different saves by using the LEVEL option</td>
+            <td>Maps to <a href="https://minecraft.wiki/w/Server.properties#level-name">the <code>level-name</code> server property</a>. You can either switch between world saves or run multiple containers with different saves by using the LEVEL option</td>
             <td><code>world</code></td>
             <td>⬜️</td>
         </tr>
         <tr>
-            <td><code>ONLINE_MODE</code></td>
-            <td>By default, server checks connecting players against Minecraft's account database. If you want to create an offline server or your server is not connected to the internet, you can disable the server to try connecting to minecraft.net to authenticate players</td>
-            <td><code>true</code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>ALLOW_FLIGHT</code></td>
-            <td>Allows users to use flight on your server while in Survival mode, if they have a mod that provides flight installed.</td>
-            <td><code>FALSE</code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>SERVER_NAME</code></td>
-            <td>The server name</td>
-            <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
             <td><code>SERVER_PORT</code></td>
-            <td>Only change this value if you know what you're doing. It is only needed when using host networking and it is rare that host networking should be used.</td>
+            <td>Maps to <a href="https://minecraft.wiki/w/Server.properties#server-port">the <code>server-port</code> server property</a>. Only change this value if you know what you're doing. It is only needed when using host networking and it is rare that host networking should be used.</td>
             <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>PLAYER_IDLE_TIMEOUT</code></td>
-            <td>player-idle-timeout</td>
-            <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>ENABLE_JMX</code></td>
-            <td>enable-jmx-monitoring</td>
-            <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>SYNC_CHUNK_WRITES</code></td>
-            <td>sync-chunk-writes</td>
-            <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>ENABLE_STATUS</code></td>
-            <td>enable-status</td>
-            <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>ENTITY_BROADCAST_RANGE_PERCENTAGE</code></td>
-            <td>entity-broadcast-range-percentage</td>
-            <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>FUNCTION_PERMISSION_LEVEL</code></td>
-            <td>function-permission-level</td>
-            <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>NETWORK_COMPRESSION_THRESHOLD</code></td>
-            <td>network-compression-threshold</td>
-            <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>OP_PERMISSION_LEVEL</code></td>
-            <td>op-permission-level</td>
-            <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>PREVENT_PROXY_CONNECTIONS</code></td>
-            <td>prevent-proxy-connections</td>
-            <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>USE_NATIVE_TRANSPORT</code></td>
-            <td>use-native-transport</td>
-            <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>SIMULATION_DISTANCE</code></td>
-            <td>simulation-distance</td>
-            <td><code></code></td>
-            <td>⬜️</td>
-        </tr>
-        <tr>
-            <td><code>EXEC_DIRECTLY</code></td>
-            <td>If you would like to docker attach to the Minecraft server console with color and interactive capabilities, then set to <code>true</code></td>
-            <td><code>false</code></td>
             <td>⬜️</td>
         </tr>
         <tr>
             <td><code>STOP_SERVER_ANNOUNCE_DELAY</code></td>
             <td>To allow time for players to finish what they're doing during a graceful server shutdown, set <code>STOP_SERVER_ANNOUNCE_DELAY</code> to a number of seconds to delay after an announcement is posted by the server.</td>
+            <td><code></code></td>
+            <td>⬜️</td>
+        </tr>
+        <tr>
+            <td><code>STOP_SERVER_DELAY_COMMAND</code></td>
+            <td>To set a custom command to run at the start of this delay period, set <code>STOP_SERVER_DELAY_COMMAND</code> to the full command. This will run in place of the announcement.</td>
             <td><code></code></td>
             <td>⬜️</td>
         </tr>
@@ -482,6 +301,12 @@ alternatively, you can mount: <code>/etc/localtime:/etc/localtime:ro
             <td>⬜️</td>
         </tr>
         <tr>
+            <td><code>PRE_START_SCRIPT</code></td>
+            <td>Path to an executable run after setup and just before the server starts. The server is not started if it exits non-zero. See <a href="../configuration/misc-options/#pre-start-script">Pre-start script</a></td>
+            <td><code></code></td>
+            <td>⬜️</td>
+        </tr>
+        <tr>
             <td><code>USE_FLARE_FLAGS</code></td>
             <td>To enable the JVM flags required to fully support the <a href="https://blog.airplane.gg/flare">Flare profiling suite</a>.</td>
             <td><code></code></td>
@@ -501,6 +326,10 @@ alternatively, you can mount: <code>/etc/localtime:/etc/localtime:ro
         </tr> -->
     </tbody>
 </table>
+
+### Server properties
+
+This image maps known server properties as described in [this section](configuration/server-properties.md).
 
 ### Custom resource pack
 
@@ -599,6 +428,12 @@ alternatively, you can mount: <code>/etc/localtime:/etc/localtime:ro
             <td>✅</td>
         </tr>
         <tr>
+            <td><code>RCON_PASSWORD_FILE</code></td>
+            <td>Can be set to read the RCON password from a file. Overrides <code>RCON_PASSWORD</code> if both are set.</td>
+            <td><code></code></td>
+            <td>⬜️</td>
+        </tr>
+        <tr>
             <td><code>RCON_PORT</code></td>
             <td>The port for RCON</td>
             <td><code>25575</code></td>
@@ -644,10 +479,6 @@ alternatively, you can mount: <code>/etc/localtime:/etc/localtime:ro
 </table>
 
 ### Auto-Pause
-
-!!! note
-
-    Autopause is not compatible with `EXEC_DIRECTLY=true` and the two cannot be set together.
 
 <table>
     <thead>
@@ -804,7 +635,7 @@ alternatively, you can mount: <code>/etc/localtime:/etc/localtime:ro
         </tr>
         <tr>
             <td><code>CF_FILENAME_MATCHER</code></td>
-            <td>Specify a substring to match the desired filename</td>
+            <td>Specify either a substring or a regex pattern surrounded with "/" to match the desired filename</td>
             <td><code></code></td>
             <td>⬜️</td>
         </tr>

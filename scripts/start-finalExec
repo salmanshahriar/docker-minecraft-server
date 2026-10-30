@@ -3,10 +3,28 @@
 : "${DEBUG_EXEC:=false}"
 : "${SETUP_ONLY:=false}"
 : "${CUSTOM_JAR_EXEC:=}"
+: "${SERVER_RUNNER:=mc-server-runner}"
+: "${PRE_START_SCRIPT:=}"
 
 # shellcheck source=start-utils
 . "$(dirname "$0")/start-utils"
 isDebugging && set -x
+
+function runPreStartScript() {
+  if [[ ! $PRE_START_SCRIPT ]]; then
+    return
+  fi
+  if [[ ! -x $PRE_START_SCRIPT ]]; then
+    logError "PRE_START_SCRIPT $PRE_START_SCRIPT is not an executable file"
+    exit 1
+  fi
+  log "Running pre-start script $PRE_START_SCRIPT..."
+  if ! "$PRE_START_SCRIPT"; then
+    logError "Pre-start script $PRE_START_SCRIPT failed, so the server will not be started"
+    exit 1
+  fi
+}
+
 baseDataDir=/data
 tmpServerIconPath=/tmp/icon.img
 serverIconPath=${baseDataDir}/server-icon.png
@@ -47,7 +65,7 @@ if [ -n "$ICON" ]; then
     fi
 fi
 
-canUseRollingLogs=true
+useGeneratedLogs=${GENERATE_LOG4J2_CONFIG:-${ENABLE_ROLLING_LOGS:-false}}
 useFallbackJvmFlag=false
 
 SERVER_DIR="$baseDataDir"
@@ -65,7 +83,7 @@ patchLog4jConfig() {
     return 1
   fi
   JVM_OPTS="-Dlog4j.configurationFile=${file} ${JVM_OPTS}"
-  canUseRollingLogs=false
+  useGeneratedLogs=false
 }
 
 # Temporarily disable debugging output
@@ -73,7 +91,9 @@ oldState=$(shopt -po xtrace || true)
 shopt -u -o xtrace
 # Patch Log4j remote code execution vulnerability
 # See https://www.minecraft.net/en-us/article/important-message--security-vulnerability-java-edition
-if versionLessThan 1.7; then
+if isFamily NATIVE; then
+  : # Native server, so there is no log4j to patch
+elif versionLessThan 1.7; then
   : # No patch required here.
 elif isFamily VANILLA && versionLessThan 1.12; then
   patchLog4jConfig log4j2_17-111.xml https://launcher.mojang.com/v1/objects/dd2b723346a8dcd48e7f4d245f6bf09e98db9696/log4j2_17-111.xml
@@ -93,18 +113,56 @@ if ${useFallbackJvmFlag}; then
   JVM_OPTS="-Dlog4j2.formatMsgNoLookups=true ${JVM_OPTS}"
 fi
 
-if versionLessThan 1.7; then
+if isFamily NATIVE; then
+  : # Native server, so no Log4jPatcher agent
+elif versionLessThan 1.7; then
   : # No patch required here.
 elif versionLessThan 1.18.1; then
-  if isTrue ${SKIP_LOG4J_PATCHER:-false}; then
+  if isTrue "${SKIP_LOG4J_PATCHER:-false}"; then
     log "Skipping Log4jPatcher, make sure you are not affected"
   else
     JVM_OPTS="-javaagent:/image/Log4jPatcher.jar ${JVM_OPTS}"
   fi
 fi
 
+function addAgents() {
+  local agents=$1 outDir=$2 glob=$3 option=$4
+
+  mkdir -p "$outDir"
+  if ! mc-image-helper mcopy \
+    --glob="$glob" \
+    --scope=var-list \
+    --to="$outDir" \
+    "$agents"; then
+    logError "Failed to get agents from $agents"
+    exit 1
+  fi
+
+  # The manifest lists the files that the list resolved to, also in subdirectories, as for destination<source entries
+  local manifest="$outDir/.var-list-manifest.json"
+  if [ -f "$manifest" ]; then
+    while read -r agent; do
+      JVM_OPTS="${JVM_OPTS} ${option}:${outDir}/${agent}"
+    done < <(jq -r '.files[]' "$manifest" | sort)
+  fi
+}
+
+if isFamily NATIVE; then
+  : # Native server, so no JVM to load agents into
+else
+  if [[ -v JVM_AGENTS ]]; then
+    addAgents "$JVM_AGENTS" /data/agents/jvm '*.so' -agentpath
+  fi
+  if [[ -v JAVA_AGENTS ]]; then
+    addAgents "$JAVA_AGENTS" /data/agents/java '*.jar' -javaagent
+  fi
+fi
+
 # Set up log4j2 configuration with templating support
-if ${canUseRollingLogs}; then
+LOGFILE="${SERVER_DIR}/log4j2.xml"
+if isFamily NATIVE; then
+  : # Native server, so no log4j configuration
+elif ${useGeneratedLogs}; then
   # Set up log configuration defaults
   : "${LOG_LEVEL:=info}"
   : "${ROLLING_LOG_MAX_FILES:=1000}"
@@ -128,10 +186,9 @@ if ${canUseRollingLogs}; then
   export LOG_LEVEL ROLLING_LOG_FILE_PATTERN ROLLING_LOG_MAX_FILES
   export LOG_CONSOLE_FORMAT LOG_TERMINAL_FORMAT LOG_FILE_FORMAT
 
-  LOGFILE="${SERVER_DIR}/log4j2.xml"
 
-  # Always regenerate if file doesn't exist or REGENERATE_LOG4J2 is set
-  if [ ! -e "$LOGFILE" ] || isTrue "${REGENERATE_LOG4J2:-false}"; then
+  # Always regenerate if file doesn't exist
+  if [ ! -e "$LOGFILE" ] || isTrue "${REGENERATE_LOG4J2:-true}"; then
     log "Generating log4j2.xml from template in ${LOGFILE}"
 
     # Generate log4j2.xml using heredoc for reliable variable substitution
@@ -142,6 +199,9 @@ if ${canUseRollingLogs}; then
         <Console name="SysOut" target="SYSTEM_OUT">
             <PatternLayout pattern="${LOG_CONSOLE_FORMAT}" />
         </Console>
+        <Queue name="TerminalConsole">
+            <PatternLayout pattern="${LOG_TERMINAL_FORMAT}" />
+        </Queue>
         <RollingRandomAccessFile name="File" fileName="logs/latest.log" filePattern="${ROLLING_LOG_FILE_PATTERN}">
             <PatternLayout pattern="${LOG_FILE_FORMAT}" />
             <Policies>
@@ -169,19 +229,17 @@ EOF
 
   # Apply the log4j2 configuration
   JVM_OPTS="-Dlog4j.configurationFile=log4j2.xml ${JVM_OPTS}"
-elif isTrue "${ENABLE_ROLLING_LOGS:-false}"; then
-  # Legacy behavior: error if rolling logs explicitly requested but not possible
-  logError "Using rolling logs is currently not possible in the selected version due to CVE-2021-44228"
-  exit 1
+else
+  rm -f "${LOGFILE}"
 fi
 
 # Optional disable console
-if versionLessThan 1.14 && [[ ${CONSOLE,,} = false ]]; then
+if ! isFamily NATIVE && versionLessThan 1.14 && [[ ${CONSOLE,,} = false ]]; then
   EXTRA_ARGS+=" --noconsole"
 fi
 
 # Optional disable GUI for headless servers
-if [[ ${GUI,,} = false ]]; then
+if ! isFamily NATIVE && [[ ${GUI,,} = false ]]; then
   EXTRA_ARGS+=" nogui"
 fi
 
@@ -211,8 +269,11 @@ fi
 : "${USE_MEOWICE_FLAGS:=false}"
 : "${USE_MEOWICE_GRAALVM_FLAGS:=false}"
 
-if isTrue "${USE_MEOWICE_FLAGS}"; then
+if isTrue "${USE_MEOWICE_FLAGS}" || isTrue "${USE_MEOWICE_GRAALVM_FLAGS}"; then
   java_major_version=$(mc-image-helper java-release)
+fi
+
+if isTrue "${USE_MEOWICE_FLAGS}"; then
   if [[ $java_major_version -gt 16 ]]; then
     log "Java version $java_major_version using MeowIce's flags for Java 17+"
   else
@@ -342,6 +403,11 @@ if isTrue "${USE_MEOWICE_FLAGS}"; then
   else
     log "cpu not x86_64, disabling architecture specific flags"
   fi
+  if [[ $java_major_version -gt 23 ]]; then
+    JVM_XX_OPTS="${JVM_XX_OPTS}
+    -XX:+UseCompactObjectHeaders
+    "
+  fi
 fi
 
 if isTrue "${USE_MEOWICE_GRAALVM_FLAGS}"; then
@@ -365,7 +431,6 @@ if isTrue "${USE_MEOWICE_GRAALVM_FLAGS}"; then
     -Djdk.graal.TuneInlinerExploration=1
     -Djdk.graal.LoopRotation=true
     -Djdk.graal.CompilerConfiguration=enterprise
-    --enable-native-access=ALL-UNNAMED
     "
   else
     log "Using MeowIce's flags for Graalvm"
@@ -445,7 +510,10 @@ function copyFilesForCurseForge() {
   cp -f ${baseDataDir}/eula.txt "${FTB_DIR}/"
 }
 
-if versionLessThan 'b1.8'; then
+if isFamily NATIVE; then
+  # Native server, always probed with the modern server list ping
+  rm -f "$mcHealthEnvPath"
+elif versionLessThan 'b1.8'; then
   echo "
 DISABLE_HEALTHCHECK=true
   " > "$mcHealthEnvPath"
@@ -480,6 +548,9 @@ fi
 if [[ ${STOP_SERVER_ANNOUNCE_DELAY} ]]; then
   mcServerRunnerArgs+=(--stop-server-announce-delay "${STOP_SERVER_ANNOUNCE_DELAY}s")
 fi
+if [[ ${STOP_SERVER_DELAY_COMMAND} ]]; then
+  mcServerRunnerArgs+=(--stop-server-delay-command "${STOP_SERVER_DELAY_COMMAND}")
+fi
 if isTrue "${ENABLE_SSH}"; then
   mcServerRunnerArgs+=(--remote-console)
 fi
@@ -487,12 +558,16 @@ fi
 if [[ ${TYPE} == "CURSEFORGE" && "${SERVER}" ]]; then
   copyFilesForCurseForge
 
-  cd "${FTB_DIR}" || (logError "Can't go into ${FTB_DIR}"; exit 1)
+  if ! cd "${FTB_DIR}"; then
+    logError "Can't go into ${FTB_DIR}"
+    exit 1
+  fi
   log "Starting CurseForge server in ${FTB_DIR}..."
+  runPreStartScript
   if isTrue "${DEBUG_EXEC}"; then
     set -x
   fi
-  exec mc-server-runner ${bootstrapArgs} "${mcServerRunnerArgs[@]}" java $JVM_XX_OPTS $JVM_OPTS $expandedDOpts -jar "$(basename "${SERVER}")" "$@" $EXTRA_ARGS
+  exec ${SERVER_RUNNER} ${bootstrapArgs} "${mcServerRunnerArgs[@]}" -- java $JVM_XX_OPTS $JVM_OPTS $expandedDOpts -jar "$(basename "${SERVER}")" "$@" $EXTRA_ARGS
 elif [[ ${TYPE} == "CURSEFORGE" ]]; then
   mcServerRunnerArgs+=(--shell bash)
 
@@ -500,11 +575,15 @@ elif [[ ${TYPE} == "CURSEFORGE" ]]; then
 
 if isPercentage "$INIT_MEMORY" || isPercentage "$MAX_MEMORY"; then
 # Convert to bytes
-NORM_INIT_MEM=$(normalizeMemSize "$INIT_MEMORY")
-NORM_MAX_MEM=$(normalizeMemSize "$MAX_MEMORY")
-# Convert to MB
-((NORM_INIT_MEM*=1048576))
-((NORM_MAX_MEM*=1048576))
+if ! NORM_INIT_MEM=$(normalizeMemSize "$INIT_MEMORY"); then
+  exit 1
+fi
+if ! NORM_MAX_MEM=$(normalizeMemSize "$MAX_MEMORY"); then
+  exit 1
+fi
+# Convert bytes to MB
+((NORM_INIT_MEM/=1048576))
+((NORM_MAX_MEM/=1048576))
 
   cat > "${FTB_DIR}/settings-local.sh" <<EOF
 export MIN_RAM="${NORM_INIT_MEM}M"
@@ -528,7 +607,10 @@ fi
     fi
   fi
 
-  cd "${FTB_DIR}" || (logError "Can't go into ${FTB_DIR}"; exit 1)
+  if ! cd "${FTB_DIR}"; then
+    logError "Can't go into ${FTB_DIR}"
+    exit 1
+  fi
   log "Running FTB ${FTB_SERVER_START} in ${FTB_DIR} ..."
 
   finalArgs="${FTB_SERVER_START}"
@@ -541,27 +623,48 @@ fi
   if isTrue "${DEBUG_EXEC}"; then
     set -x
   fi
-  if isTrue "${EXEC_DIRECTLY:-false}"; then
-    "${finalArgs[@]}"
-  else
-    if [ -f "${FTB_DIR}/variables.txt" ]; then
-        JVM_ARGS="${JVM_XX_OPTS} ${JVM_OPTS} $expandedDOpts"
-        JVM_ARGS=${JVM_ARGS//$'\n'/}
-        sed -i "s~JAVA_ARGS=.*~JAVA_ARGS=\"${JVM_ARGS}\"~" "${FTB_DIR}/variables.txt"
-    fi
-    exec mc-server-runner "${mcServerRunnerArgs[@]}" "${finalArgs[@]}"
+  if [ -f "${FTB_DIR}/variables.txt" ]; then
+      JVM_ARGS="${JVM_XX_OPTS} ${JVM_OPTS} $expandedDOpts"
+      JVM_ARGS=${JVM_ARGS//$'\n'/}
+      sed -i "s~JAVA_ARGS=.*~JAVA_ARGS=\"${JVM_ARGS}\"~" "${FTB_DIR}/variables.txt"
   fi
+  runPreStartScript
+  exec ${SERVER_RUNNER} "${mcServerRunnerArgs[@]}" -- "${finalArgs[@]}"
 elif [[ $SERVER =~ run.sh ]]; then
   log "Using Forge supplied run.sh script..."
   echo $JVM_XX_OPTS $JVM_OPTS $expandedDOpts > user_jvm_args.txt
-  if isTrue ${SETUP_ONLY}; then
+  if isTrue "${SETUP_ONLY}"; then
     echo "SETUP_ONLY: bash ${SERVER}"
     exit
   fi
+  runPreStartScript
   if isTrue "${DEBUG_EXEC}"; then
     set -x
   fi
-  exec mc-server-runner "${mcServerRunnerArgs[@]}" --shell bash "${SERVER}" $EXTRA_ARGS
+  exec ${SERVER_RUNNER} "${mcServerRunnerArgs[@]}" --shell bash -- "${SERVER}" $EXTRA_ARGS
+elif isFamily NATIVE; then
+  # Native server, so no JVM arguments
+  if [[ ! -x "$SERVER" ]]; then
+    log "Making $SERVER executable"
+    if ! chmod +x "$SERVER"; then
+      logError "Failed to make $SERVER executable"
+      exit 1
+    fi
+  fi
+
+  if isTrue "${SETUP_ONLY}"; then
+    echo "SETUP_ONLY: ${SERVER}"
+    exit
+  fi
+
+  runPreStartScript
+  if isTrue "${DEBUG_EXEC}"; then
+    set -x
+  fi
+
+  log "Starting the Minecraft server..."
+  # shellcheck disable=SC2086
+  exec ${SERVER_RUNNER} ${bootstrapArgs} "${mcServerRunnerArgs[@]}" -- "${SERVER}" "$@" $EXTRA_ARGS
 else
   # If we have a bootstrap.txt file... feed that in to the server stdin
   if [ -f $bootstrapPath ]; then
@@ -590,18 +693,15 @@ else
     "$@" $EXTRA_ARGS
   )
 
-  if isTrue ${SETUP_ONLY}; then
+  if isTrue "${SETUP_ONLY}"; then
     echo "SETUP_ONLY: java ${finalArgs[*]}"
     exit
   fi
 
+  runPreStartScript
   if isTrue "${DEBUG_EXEC}"; then
     set -x
   fi
 
-  if isTrue "${EXEC_DIRECTLY:-false}"; then
-    exec java "${finalArgs[@]}"
-  else
-    exec mc-server-runner ${bootstrapArgs} "${mcServerRunnerArgs[@]}" java "${finalArgs[@]}"
-  fi
+  exec ${SERVER_RUNNER} ${bootstrapArgs} "${mcServerRunnerArgs[@]}" -- java "${finalArgs[@]}"
 fi

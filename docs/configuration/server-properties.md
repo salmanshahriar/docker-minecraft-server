@@ -1,4 +1,8 @@
-In order to unify management of the Minecraft server container, all of the [`server.properties`](https://minecraft.wiki/w/Server.properties) entries can be managed by the environment variables described in the sections below. Some of the mappings provide additional functionality above and beyond the properties file.
+To unify management of the Minecraft server container, all known [`server.properties`](https://minecraft.wiki/w/Server.properties) entries can be managed by the environment variables described in the sections below. Some mappings provide additional functionality above and beyond the properties file and will be described in the sections below.
+
+!!! warning "Version compatibility"
+
+    Not all server properties are supported by all versions of Minecraft. Since this image supports a wide range of versions, please consult the [server properties documentation](https://minecraft.wiki/w/Server.properties) for the version you are using.
 
 If you prefer to manually manage the `server.properties` file, set `OVERRIDE_SERVER_PROPERTIES` to "false". Similarly, you can entirely skip the startup script's creation of `server.properties` by setting `SKIP_SERVER_PROPERTIES` to "true".
 
@@ -72,6 +76,12 @@ To produce a multi-line MOTD, embed a newline character as `\n` in the string, s
     
     ```
     -e MOTD="Line one\nLine two"
+    ```
+    
+    From bash shell
+    
+    ```
+    -e MOTD=$'Line one\nLine two'
     ```
     
     or within a compose file
@@ -158,7 +168,9 @@ To [enforce the whitelist changes immediately](https://minecraft.wiki/w/Server.p
 
 !!! tip "Changing user API provider"
 
-    The usernames provided for whitelist and ops processing are resolved using either [PlayerDB](https://playerdb.co/) or [Mojang's API](https://wiki.vg/Mojang_API#Username_to_UUID). The default uses PlayerDB, but can be changed by setting the environment variable `USER_API_PROVIDER` to "mojang". Sometimes one or the other service can become overloaded, which is why there is the ability to switch providers.
+    When specifying usernames for whitelist and ops processing, use Minecraft: Java Edition profile names, not Xbox gamertags. They can differ even when they belong to the same Microsoft account. A player can review or change their Java profile name on the [Minecraft profile page](https://www.minecraft.net/en-us/msaprofile/mygames/editprofile).
+
+    Usernames are resolved using either [PlayerDB](https://playerdb.co/) or [Mojang's API](https://wiki.vg/Mojang_API#Username_to_UUID). The default uses PlayerDB, but can be changed by setting the environment variable `USER_API_PROVIDER` to "mojang". Sometimes one or the other service can become overloaded, which is why there is the ability to switch providers.
 
 
 ### Op/Administrator Players
@@ -238,15 +250,46 @@ By default an existing `server-icon.png` file will not be replaced, that can be 
 
 ### RCON
 
-RCON is **enabled by default** to allow for graceful shut down the server and coordination of save state during backups. RCON can be disabled by setting `ENABLE_RCON` to "false".
+RCON is **enabled by default** to allow for graceful shut down of the server and coordination of save state during backups. RCON can be disabled by setting `ENABLE_RCON` to "false".
 
 !!! warning
 
     Disabling RCON will remove and limit some features, such as interactive and color console support.
 
-The default password is randomly generated on each startup; however, a specific one can be set with `RCON_PASSWORD`.
+#### RCON Password
 
-**DO NOT MAP THE RCON PORT EXTERNALLY** unless you are aware of all the consequences and have set a **secure password** with `RCON_PASSWORD`. 
+The default password is randomly generated on each startup. However, you can specify a password using one of the following environment variables:
+
+* Set `RCON_PASSWORD` to your desired password.
+* Set `RCON_PASSWORD_FILE` to the path of a file containing the password.
+
+Using `RCON_PASSWORD_FILE` is the recommended method for managing sensitive data, as it allows full support for [Docker Secrets](https://docs.docker.com/compose/how-tos/use-secrets/).
+
+??? example
+    ```yaml title="compose.yaml"
+    services:
+      mc:
+        image: itzg/minecraft-server:latest
+        pull_policy: daily
+        tty: true
+        stdin_open: true
+        ports:
+          - "25565:25565"
+        environment:
+          EULA: "TRUE"
+          RCON_PASSWORD_FILE: /run/secrets/rcon_pass # Points to the path where the secret is mounted
+        volumes:
+          # attach the relative directory 'data' to the container's /data path
+          - ./data:/data
+        secrets:
+          - rcon_pass
+    
+    secrets:
+      rcon_pass:
+        file: ./rcon_password # local file containing the password
+    ```
+!!! warning
+    **BE CAUTIOUS OF MAPPING THE RCON PORT EXTERNALLY** unless you are aware of all the consequences and have set a **secure password**.
 
 !!! info 
 
@@ -396,11 +439,16 @@ When using `docker run` from a bash shell, the entries must be quoted with the `
 
 ### Other server property mappings
 
+!!! warning "Version compatibility"
+
+    Not all server properties are supported by all versions of Minecraft. Since this image supports a wide range of versions, please consult the [server properties documentation](https://minecraft.wiki/w/Server.properties) for the version you are using.
+
 | Environment Variable                    | Server Property                                                                                                               |
 |-----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
 | ACCEPTS_TRANSFERS                       | [accepts-transfers](https://minecraft.wiki/w/Server.properties#accepts-transfers)                                             |
 | ALLOW_FLIGHT                            | [allow-flight](https://minecraft.wiki/w/Server.properties#allow-flight)                                                       |
 | ALLOW_NETHER                            | [allow-nether](https://minecraft.wiki/w/Server.properties#allow-nether)                                                       |
+| ANNOUNCE_PLAYER_ACHIEVEMENTS            | [announce-player-achievements](https://minecraft.wiki/w/Server.properties#announce-player-achievements)                       |
 | BROADCAST_CONSOLE_TO_OPS                | [broadcast-console-to-ops](https://minecraft.wiki/w/Server.properties#broadcast-console-to-ops)                               |
 | BROADCAST_RCON_TO_OPS                   | [broadcast-rcon-to-ops](https://minecraft.wiki/w/Server.properties#broadcast-rcon-to-ops)                                     |
 | BUG_REPORT_LINK                         | [bug-report-link](https://minecraft.wiki/w/Server.properties#bug-report-link)                                                 |
@@ -411,6 +459,7 @@ When using `docker run` from a bash shell, the entries must be quoted with the `
 | FORCE_GAMEMODE                          | [force-gamemode](https://minecraft.wiki/w/Server.properties#force-gamemode)                                                   |
 | FUNCTION_PERMISSION_LEVEL               | [function-permission-level](https://minecraft.wiki/w/Server.properties#function-permission-level)                             |
 | GENERATE_STRUCTURES                     | [generate-structures](https://minecraft.wiki/w/Server.properties#generate-structures)                                         |
+| GENERATOR_SETTINGS                      | [generator-settings](https://minecraft.wiki/w/Server.properties#generator-settings)                                           |                                                                                                                    
 | HARDCORE                                | [hardcore](https://minecraft.wiki/w/Server.properties#hardcore)                                                               |
 | HIDE_ONLINE_PLAYERS                     | [hide-online-players](https://minecraft.wiki/w/Server.properties#hide-online-players)                                         |
 | LOG_IPS                                 | [log-ips](https://minecraft.wiki/w/Server.properties#log-ips)                                                                 |
@@ -422,6 +471,12 @@ When using `docker run` from a bash shell, the entries must be quoted with the `
 | MANAGEMENT_SERVER_TLS_ENABLED           | [management-server-tls-enabled](https://minecraft.wiki/w/Server.properties#management-server-tls-enabled)                     |
 | MANAGEMENT_SERVER_TLS_KEYSTORE          | [management-server-tls-keystore](https://minecraft.wiki/w/Server.properties#management-server-tls-keystore)                   |
 | MANAGEMENT_SERVER_TLS_KEYSTORE_PASSWORD | [management-server-tls-keystore-password](https://minecraft.wiki/w/Server.properties#management-server-tls-keystore-password) |
+| MAX_BUILD_HEIGHT                        | [max-build-height](https://minecraft.wiki/w/Server.properties#max-build-height)                                               |
+| MAX_COMMAND_CHAIN_LENGTH                | [max-command-chain-length](https://minecraft.wiki/w/Server.properties#max-command-chain-length)                               |
+| MAX_ENTITY_CRAMMING                     | [max-entity-cramming](https://minecraft.wiki/w/Server.properties#max-entity-cramming)                                         |
+| MAX_ENTITY_COLLISION_RADIUS             | [max-entity-collision-radius](https://minecraft.wiki/w/Server.properties#max-entity-collision-radius)                         |
+| MAX_FUNCTION_CHAIN_DEPTH                | [max-function-chain-depth](https://minecraft.wiki/w/Server.properties#max-function-chain-depth)                               |
+| MAX_NEIGHBORS                           | [max-neighbors](https://minecraft.wiki/w/Server.properties#max-neighbors)                                                     |
 | MAX_CHAINED_NEIGHBOR_UPDATES            | [max-chained-neighbor-updates](https://minecraft.wiki/w/Server.properties#max-chained-neighbor-updates)                       |
 | MAX_PLAYERS                             | [max-players](https://minecraft.wiki/w/Server.properties#max-players)                                                         |
 | MAX_TICK_TIME                           | [max-tick-time](https://minecraft.wiki/w/Server.properties#max-tick-time)                                                     |
@@ -439,7 +494,10 @@ When using `docker run` from a bash shell, the entries must be quoted with the `
 | RESOURCE_PACK_PROMPT                    | [resource-pack-prompt](https://minecraft.wiki/w/Server.properties#resource-pack-prompt)                                       |
 | SERVER_NAME                             | [server-name](https://minecraft.wiki/w/Server.properties#server-name)                                                         |
 | SIMULATION_DISTANCE                     | [simulation-distance](https://minecraft.wiki/w/Server.properties#simulation-distance)                                         |
+| SNOOPER_ENABLED                         | [snooper-enabled](https://minecraft.wiki/w/Server.properties#snooper-enabled)                                                 |
+| SPAWN_ANIMALS                           | [spawn-animals](https://minecraft.wiki/w/Server.properties#spawn-animals)                                                     |
 | SPAWN_MONSTERS                          | [spawn-monsters](https://minecraft.wiki/w/Server.properties#spawn-monsters)                                                   |
+| SPAWN_NPCS                              | [spawn-npcs](https://minecraft.wiki/w/Server.properties#spawn-npcs)                                                           |
 | SPAWN_PROTECTION                        | [spawn-protection](https://minecraft.wiki/w/Server.properties#spawn-protection)                                               |
 | STATUS_HEARTBEAT_INTERVAL               | [status-heartbeat-interval](https://minecraft.wiki/w/Server.properties#status-heartbeat-interval)                             |
 | SYNC_CHUNK_WRITES                       | [sync-chunk-writes](https://minecraft.wiki/w/Server.properties#sync-chunk-writes)                                             |
