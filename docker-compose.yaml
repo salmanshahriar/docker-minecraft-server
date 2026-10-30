@@ -28,7 +28,7 @@ services:
       LOG_TIMESTAMP: "true"
       ONLINE_MODE: "false"
     volumes:
-      - "./data:/data"
+      - "../files/data:/data"
 
 
 
