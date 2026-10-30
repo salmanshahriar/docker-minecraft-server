@@ -3,13 +3,14 @@ services:
     image: itzg/minecraft-server:latest
     tty: true
     stdin_open: true
+    cpus: 4
     ports:
       - "25565:25565"
     environment:
       EULA: "TRUE"
       TYPE: "PAPER"
-      VERSION: "1.21.11"
-      MEMORY: "3072M"
+      VERSION: "26.3"
+      MEMORY: "2G"
       MAX_PLAYERS: "15"
       MOTD: "Nigga SMP"
       ICON: "https://cdn.discordapp.com/icons/986328577475756112/db233c1702c4b0b413acf544915e1e6a.webp"
