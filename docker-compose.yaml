@@ -17,9 +17,18 @@ services:
       TZ: "Asia/Dhaka"
       DIFFICULTY: "3"
       OPS: |-
-        SALMAN_67
+        salman_67:offline
       ENABLE_WHITELIST: "true"
       ENFORCE_WHITELIST: "true"
+      EXISTING_WHITELIST_FILE: "SYNCHRONIZE"
+      WHITELIST: |-
+        Rohnx:offline
+        zyrox_mlh89:offline
+        batman:offline
+        maha:offline
+        HoneyBoyee:offline
+        salman_67:offline
+        apon19:offline
       PLUGINS: |-
         https://cdn.modrinth.com/data/TsLS8Py5/versions/gtqGepWi/SkinsRestorer.jar
         https://hangarcdn.papermc.io/plugins/Gecolay/GSit/versions/3.1.0/PAPER/GSit-3.1.0.jar
