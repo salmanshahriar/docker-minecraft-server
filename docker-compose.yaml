@@ -27,6 +27,7 @@ services:
         maha
         HoneyBoyee
         salman_67
+        apon19
       PLUGINS: |-
         https://cdn.modrinth.com/data/TsLS8Py5/versions/gtqGepWi/SkinsRestorer.jar
         https://hangarcdn.papermc.io/plugins/Gecolay/GSit/versions/3.1.0/PAPER/GSit-3.1.0.jar
