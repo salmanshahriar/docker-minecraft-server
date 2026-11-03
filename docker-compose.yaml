@@ -29,6 +29,9 @@ services:
         HoneyBoyee:offline
         salman_67:offline
         apon19:offline
+        iblameayon:offline
+        Cunnu:offline
+        Chodu:offline
       PLUGINS: |-
         https://cdn.modrinth.com/data/TsLS8Py5/versions/gtqGepWi/SkinsRestorer.jar
         https://hangarcdn.papermc.io/plugins/Gecolay/GSit/versions/3.1.0/PAPER/GSit-3.1.0.jar
